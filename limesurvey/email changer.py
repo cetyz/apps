@@ -234,7 +234,7 @@ def change_emails(master, skey, sid, statusVar, inFile):
                 print('Token ID: ' + token['tid'])
                 print(str(tokenEmail) + ' changed to: ' + dic[tokenEmail])
             currentTimer = int(timerCounter/float(len(tokenList))*100)
-            if currentTimer%2== 0:
+            if currentTimer%5== 0:
                 statusVar.set(str(currentTimer)+'%')
                 master.update_idletasks()
             timerCounter += 1.00
