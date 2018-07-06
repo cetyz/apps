@@ -3,6 +3,11 @@
 Created on Mon Apr 16 17:37:11 2018
 
 @author: Charles Edmond TanYZ
+
+Simple app to:
+1. Log in to Limesurvey and get your key to perform operations
+2. Find a select a csv to change emails
+3. Change the emails
 """
 #####
 # for the csv, first column will be the "key", second column will be the "value"
