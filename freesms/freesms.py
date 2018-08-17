@@ -22,11 +22,19 @@ driver.get('http://www.afreesms.com/freesms/')
 driver.close()
 '''
 
-message = (
-"""testing
-testing
-testing"""
+global driver
+
+def message(name, token):
+    message = (
+'''Dear ITE Graduate,
+
+Click to access the ITE Survey:
+
+https://survey.inresearch.com.sg/index.php/survey/index/sid/836195/token/''' + token + '''/lang/en
+
+InResearch Pte Ltd'''
 )
+    return message
 
 # select the csv file and update the label for it(below)      
 def select_csv(csvPathVar, csvNameVar, instructionsVar):
@@ -40,20 +48,16 @@ def select_csv(csvPathVar, csvNameVar, instructionsVar):
     else:
         csvNameVar.set(os.path.basename(selected_csv))
         csvPathVar.set(selected_csv)
-        instructionsVar.set('Click "Begin" to load the CSV and begin the message sending process')
+        instructionsVar.set('Click "Initialize Browser" to start the browser')
 
 # to update the instructions
 def update_instructions(instructionsVar, string):
     instructionsVar.set(string)
 
-def launch(csv_file, counterVar, nameVar, numberVar, tokenVar, instructionsVar):
+def load_receipients(csv_file, counterVar, nameVar, numberVar, tokenVar, previewVar, instructionsVar):
+    global driver
     counter = counterVar.get()
-    if counter == 1:
-        global driver
-        driver = Driver()
-        driver.driver.get('http://www.afreesms.com/freesms/')
-    else:
-        driver.driver.get('http://www.afreesms.com/freesms/')
+    driver.driver.get('http://www.afreesms.com/freesms/')
     with open(csv_file) as opencsv:
         reader = csv.reader(opencsv)
         rows = list(reader)
@@ -61,43 +65,56 @@ def launch(csv_file, counterVar, nameVar, numberVar, tokenVar, instructionsVar):
             nameVar.set(rows[counter][0])
             numberVar.set(rows[counter][1])
             tokenVar.set(rows[counter][2])
+            previewVar.set(message(nameVar, tokenVar))
             update_instructions(instructionsVar, 'Enter the Verification Code and hit "Send"')
         else:
             nameVar.set('')
             numberVar.set('')
             tokenVar.set('')
             update_instructions(instructionsVar, 'SMSes sent to all recipients!')
+            driver.driver.close()
 
-def send_button(csv_file, counterVar, nameVar, numberVar, tokenVar, instructionsVar):
+def init_browser(instructionsVar):
+    global driver
+    driver = Driver()
+    update_instructions(instructionsVar, 'Click Load Receipient to load in the first receipient')
+
+
+def send_button(csv_file, counterVar, nameVar, numberVar, tokenVar, verificationCodeVar, instructionsVar):
     counterVar.set(counterVar.get() + 1)
-    driver.select_country(driver)
+    global driver
+    driver.select_country()
+    driver.enter_number(numberVar.get())
+    driver.enter_message(nameVar.get(), tokenVar.get())
+    driver.enter_verification(verificationCodeVar.get())
+    driver.send()
     
-    launch(csv_file, counterVar, nameVar, numberVar, tokenVar, instructionsVar)
+    update_instructions(instructionsVar, 'Sent! Hit Load Receipients for the next receipient')
 
 # functions related to selenium
 class Driver:
     def __init__(self):
         self.driver = webdriver.Chrome('F:\WinPython\python3.6\selenium\chromedriver.exe')
     
-    def select_country(self, driver):
-        countryNameBox = driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[2]/td[2]/select')
+    def select_country(self):
+        countryNameBox = self.driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[2]/td[2]/select')
         countrySelect = Select(countryNameBox)
         countrySelect.select_by_visible_text('Singapore')
     
-    def enter_number(self, driver, number):
-        numberBox = driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[3]/td[2]/input')
+    def enter_number(self, number):
+        numberBox = self.driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[3]/td[2]/input')
         numberBox.send_keys(str(number))
     
-    def enter_message(self, driver):
-        textBox = driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[4]/td[2]/textarea')
-        textBox.send_keys(message)
+    def enter_message(self, name, token):
+        textBox = self.driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[4]/td[2]/textarea')
+        textBox.send_keys(message(name, token))
     
-    def enter_verification(self, driver, number):
-        verificationBox = driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[6]/td[2]/input')
+    def enter_verification(self, number):
+        verificationBox = self.driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[6]/td[2]/input')
         verificationBox.send_keys(str(number))
     
-    def send(self, driver):
-        sendButton = driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[8]/td[2]/input[@id="submit"]')
+    def send(self):
+        sendButton = self.driver.find_element_by_xpath('//*[@id="smsform"]/table/tbody/tr[8]/td[2]/input[@id="submit"]')
         sendButton.click()
 
 
@@ -136,6 +153,7 @@ class Body(tk.Frame):
         tokenVar.grid(row=5, column=1)
         previewLabel = tk.Label(master, text = 'Preview:')
         previewLabel.grid(row=6, column=0)
+        previewLabel = tk.Label(master, textvariable = variables.messagePreviewVar)
         verificationLabel = tk.Label(master, text = 'Enter Verification Code:')
         verificationLabel.grid(row=8, column=0)
         
@@ -147,14 +165,19 @@ class Buttons(tk.Frame):
                                     lambda: select_csv(variables.csvPathVar, variables.csvNameVar, variables.instructionsVar))
         selectCsvButton.grid(row=0, column=0, sticky = tk.W + tk.E)
         
-        beginButton = tk.Button(master, text = 'Begin', command =
-                                lambda: launch(variables.csvPathVar.get(), 
+        initBrowserButton = tk.Button(master, text = 'Initialize Browser', command =
+                                      lambda: init_browser(variables.instructionsVar))
+        initBrowserButton.grid(row=2, column=0, sticky=tk.W+tk.E)
+        
+        loadButton = tk.Button(master, text = 'Load Receipient', command =
+                                lambda: load_receipients(variables.csvPathVar.get(), 
                                                variables.counterVar, 
                                                variables.curNameVar, 
                                                variables.curNumVar, 
                                                variables.curTokenVar,
+                                               variables.messagePreviewVar,
                                                variables.instructionsVar))
-        beginButton.grid(row=2, column=0, columnspan=2, sticky = tk.W+tk.E)
+        loadButton.grid(row=2, column=1, sticky = tk.W+tk.E)
         
         verificationEntry = tk.Entry(master, textvariable = variables.verificationCodeVar)
         verificationEntry.grid(row=8, column=1, sticky = tk.W+tk.E)
@@ -164,6 +187,7 @@ class Buttons(tk.Frame):
                                                variables.curNameVar, 
                                                variables.curNumVar, 
                                                variables.curTokenVar,
+                                               variables.verificationCodeVar,
                                                variables.instructionsVar))
         sendButton.grid(row=9, column=1, sticky = tk.W+tk.E)
     
@@ -191,4 +215,3 @@ if __name__ == "__main__":
     MainApplication(root)
     root.mainloop()
 #countrySelect = Select(countryNameBox)
-
