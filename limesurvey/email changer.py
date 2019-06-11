@@ -214,8 +214,29 @@ def getDic(inFile, statusVar):
     else:
         return None
 
+def change_emails_tid(master, skey, sid, statusVar, inFile):
+    dic = getDic(inFile, statusVar)
+    if dic == None:
+        statusVar.set('You did not select a csv')
+    else:
+        timerCounter = 1.00
+        tokenList = list_participants(skey,sid)
+        for token in tokenList:
+            try:
+                tokenID = token['tid']
+            except:
+                continue
+            if tokenID in dic:
+                set_participant_email(skey, sid, token['tid'], dic[tokenID])
+                print('Token ID: ' + token['tid'])
+                print(str(tokenID) + '\'s email changed to: ' + dic[tokenID])
+            currentTimer = int(timerCounter/float(len(tokenList))*100)
+            if currentTimer%5== 0:
+                statusVar.set(str(currentTimer)+'%')
+                master.update_idletasks()
+            timerCounter += 1.00
 
-def change_emails(master, skey, sid, statusVar, inFile):
+def change_emails_email(master, skey, sid, statusVar, inFile):
     dic = getDic(inFile, statusVar)
     if dic == None:
         statusVar.set('You did not select a csv')
@@ -231,6 +252,28 @@ def change_emails(master, skey, sid, statusVar, inFile):
                 set_participant_email(skey, sid, token['tid'], dic[tokenEmail])
                 print('Token ID: ' + token['tid'])
                 print(str(tokenEmail) + ' changed to: ' + dic[tokenEmail])
+            currentTimer = int(timerCounter/float(len(tokenList))*100)
+            if currentTimer%5== 0:
+                statusVar.set(str(currentTimer)+'%')
+                master.update_idletasks()
+            timerCounter += 1.00
+
+def change_emails_token(master, skey, sid, statusVar, inFile):
+    dic = getDic(inFile, statusVar)
+    if dic == None:
+        statusVar.set('You did not select a csv')
+    else:
+        timerCounter = 1.00
+        tokenList = list_participants(skey,sid)
+        for token in tokenList:
+            try:
+                tokenToken = token['token']
+            except:
+                continue
+            if tokenToken in dic:
+                set_participant_email(skey, sid, token['tid'], dic[tokenToken])
+                print('Token ID: ' + token['tid'])
+                print(str(tokenToken) + '\'s email changed to: ' + dic[tokenToken])
             currentTimer = int(timerCounter/float(len(tokenList))*100)
             if currentTimer%5== 0:
                 statusVar.set(str(currentTimer)+'%')
@@ -284,7 +327,7 @@ class Body(tk.Frame):
         csvLabel = tk.Label(master, textvariable = variables.csvTextVar)
         csvLabel.grid(row=3, column=1)
         statusLabel = tk.Label(master, textvariable= variables.statusVar)
-        statusLabel.grid(row=4, column=1)
+        statusLabel.grid(row=5, column=1)
 
 class Buttons(tk.Frame):
     def __init__(self, master, variables):
@@ -306,9 +349,15 @@ class Buttons(tk.Frame):
         getKeyButton.grid(row=0,column=2,sticky=tk.W+tk.E)
         
         #################### just testing ########################
-        changeEmailsButton = tk.Button(master, text='Change Emails', command=
-                                       lambda: change_emails(master,variables.keyVar.get(),variables.surveyListVar.get(),variables.statusVar, variables.csvVar.get()))
-        changeEmailsButton.grid(row=4,column=2, sticky=tk.W+tk.E)
+        changeEmailsIDButton = tk.Button(master, text='Change Emails (token ID)', command=
+                                       lambda: change_emails_tid(master,variables.keyVar.get(),variables.surveyListVar.get(),variables.statusVar, variables.csvVar.get()))
+        changeEmailsIDButton.grid(row=3,column=2, sticky=tk.W+tk.E)
+        changeEmailsTokenButton = tk.Button(master, text='Change Emails (token)', command=
+                                       lambda: change_emails_token(master,variables.keyVar.get(),variables.surveyListVar.get(),variables.statusVar, variables.csvVar.get()))
+        changeEmailsTokenButton.grid(row=4,column=2, sticky=tk.W+tk.E)
+        changeEmailsEmailButton = tk.Button(master, text='Change Emails (email)', command=
+                                       lambda: change_emails_email(master,variables.keyVar.get(),variables.surveyListVar.get(),variables.statusVar, variables.csvVar.get()))
+        changeEmailsEmailButton.grid(row=5,column=2, sticky=tk.W+tk.E)
 
 
 class Variables(tk.Frame):
